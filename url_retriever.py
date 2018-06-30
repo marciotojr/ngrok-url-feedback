@@ -1,6 +1,5 @@
 import json
 import os
-import subprocess
 import time
 from email.utils import formatdate
 from subprocess import call
@@ -11,7 +10,7 @@ import email_sender
 def send_email(config_file='parameters.config'):
     with open(config_file) as data_file:
         parameters = json.load(data_file)
-        urls = start_ngrok(parameters['PATH'],parameters['connection_type'],parameters['port'])
+        urls = start_ngrok(parameters['PATH'], parameters['auth-token'], parameters['connection_type'], parameters['port'])
         subject = "NGROK started at " + parameters['machine']
         #time = strftime("%d/%m/%Y at %H:%M:%S", gmtime())
         time = formatdate(localtime=True)
@@ -26,11 +25,14 @@ def send_email(config_file='parameters.config'):
         email_sender.send_mail(parameters['email-from'], parameters['email-to'], subject, msg, parameters['password'])
 
 
-def start_ngrok(PATH, connection_type="http", port="80"):
+def start_ngrok(PATH, authtoken, connection_type="http", port="80"):
     call(["pkill", "ngrok"])
+    call([PATH, "authtoken", authtoken])
     time.sleep(3)
-    subprocess.Popen([PATH, connection_type, port])
-    time.sleep(10)
+    #subprocess.Popen([PATH, connection_type, port])
+    command = PATH + " " + connection_type + " " + port
+    os.spawnl(os.P_NOWAIT, command)
+    time.sleep(1000000000000)
     os.system("curl  http://localhost:4040/api/tunnels > tunnels.json")
 
     with open('tunnels.json') as data_file:
